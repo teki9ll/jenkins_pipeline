@@ -1,39 +1,39 @@
 import requests
-import sys
-import json
 import argparse
+import json
+import sys
 
-def post_to_endpoint(url, json_data):
+def send_post_req(url, data):
+    payload = json.dumps(data)
+    headers = {
+        'Content-Type': 'application/json'
+    }
     try:
-        response = requests.post(url, json=json_data)
+        response = requests.request("POST", url, headers=headers, data=payload)
         response.raise_for_status()
-        response_data = response.json()
-        if response_data.get('status') == 'FAIL':
-            print("Status is FAIL, exiting with code -1")
+        response_data = json.loads(response.text)
+        if response_data.get("status") == "FAIL":
+            print(response_data.get("status"))
             sys.exit(-1)
         else:
-            print("Request successful. Response data:", response_data)
+            print(response_data.get("status"))
     except requests.exceptions.RequestException as e:
-        print(f"An error occurred: {e}")
+        print("Error:", e)
         sys.exit(-1)
     except json.JSONDecodeError as e:
-        print(f"Error decoding JSON response: {e}")
+        print("Error decoding JSON:", e)
         sys.exit(-1)
 
-def main():
-    parser = argparse.ArgumentParser(description='Send a JSON POST request to a specified URL.')
-    parser.add_argument('url', type=str, help='The URL to post the JSON data to.')
-    parser.add_argument('json_data', type=str, help='The JSON data to send in the POST request.')
-
-    args = parser.parse_args()
-
-    try:
-        json_data = json.loads(args.json_data)
-    except json.JSONDecodeError as e:
-        print(f"Error parsing JSON data: {e}")
-        sys.exit(-1)
-
-    post_to_endpoint(args.url, json_data)
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(description="Send a POST request to a URL with dictionary data")
+    parser.add_argument("url", type=str, help="URL to send the POST request to")
+    parser.add_argument("json_data", type=str, help="Dictionary data to send with the POST request")
+
+    args = parser.parse_args()
+    json_data = args.json_data.replace("'", "\"")
+    try:
+        send_post_req(args.url, json.loads(json_data))
+    except ValueError as e:
+        print("Invalid JSON data provided:", e)
+        sys.exit(-1)
